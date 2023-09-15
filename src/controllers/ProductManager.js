@@ -1,20 +1,69 @@
 import {promises as fs} from 'fs';
+import { nanoid  } from 'nanoid';
 
 class ProductManager {
     constructor(){
         this.path = "./src/models/products.json";
     }
 
-    writeProducts = async (product) =>{
+    readProducts = async () => {
         let products = await fs.readFile(this.path, "utf-8");
-        let productsParse = JSON.parse(products);
-        let productAll = [...productsParse, product];
-        await fs.writeFile(this.path, JSON.stringify(productAll));
+        return JSON.parse(products);
+
+    }
+
+    writeProducts = async (product) => {
+        await fs.writeFile(this.path, JSON.stringify(product));
+
+    }
+    exist = async (id) => {
+        let products = await this.readProducts();
+        return products.find(prod => prod.id === id)
+    }
+
+    addProducts = async (product) => {
+        let productsOld = await this.readProducts();
+        product.id = nanoid()
+        let productAll = [...productsOld, product];
+        await this.writeProducts(productAll);
         return "Producto Agregado";
     };
 
+    getProducts = async () => {
+        return await this.readProducts();
+
+    };
+
+    getProductsById = async (id) => {
+      
+        let productById = await this.exist(id)
+        if (!productById) return "Producto no encontrado"
+        return productById
+};
+
+updateProducts = async (id, product) => {
+    let productById = await this.exist(id)
+    await this.deleteProducts(id)
+    let productsOld = await this.readProducts()
+    let products = [{...product, id : id}, ...productsOld]
+    await this.readProducts(products)
+    return "Producto actualziado"
+
+
 }
 
-const product = new ProductManager();
+deleteProducts = async (id) => {
+    let products = await this.readProducts();
+    let existProducts = products.some(prod => prod.id === id)
+    if (existProducts) {
+    let filterProducts = products.filter(prod => prod.id != id)
+    await this.writeProducts(filterProducts)
+    return "Producto eliminado"  
+}
+return "Eliminar producto inexistente"
 
-product.writeProducts();
+
+}
+}
+
+export default ProductManager;
